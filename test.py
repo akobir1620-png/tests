@@ -4,11 +4,21 @@ import threading
 import random
 import telebot
 from docx import Document
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
-BOT_TOKEN = "8663784103:AAH7I-cKLI30nE3J8NpojSllqOPXH6mCceM"  # O'z tokeningizni yozing
+BOT_TOKEN = "8663784103:AAH7I-cKLI30nE3J8NpojSllqOPXH6mCceM"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 stop_flags = {}
+
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot ishlayapti!")
+    def log_message(self, *args):
+        pass
 
 
 def parse_docx_tables(filename):
@@ -79,7 +89,7 @@ def send_tests(message, tests):
                 type='quiz',
                 correct_option_id=shuffled['correct'],
                 is_anonymous=False,
-                open_period=10,
+                open_period=30,
                 explanation=f"✅ To'g'ri javob - {shuffled['correct'] + 1}-variant!"
             )
             count += 1
@@ -143,7 +153,7 @@ def test_command(message):
     if not docx_files:
         bot.send_message(
             chat_id,
-            "❌ .docx fayl topilmadi! Bot bilan bir papkaga .docx fayl qo'ying."
+            "❌ .docx fayl topilmadi!"
         )
         return
 
@@ -189,6 +199,11 @@ def stop_command(message):
 
 
 if __name__ == '__main__':
+    threading.Thread(
+        target=lambda: HTTPServer(('0.0.0.0', 8080), Handler).serve_forever(),
+        daemon=True
+    ).start()
+
     docx_files = [f for f in os.listdir('.') if f.endswith('.docx')]
     print(f"🤖 Bot ishga tushdi!")
     print(f"📂 Topilgan .docx fayllar: {len(docx_files)} ta")
